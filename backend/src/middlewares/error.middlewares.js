@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { ApiError } from "../utils/ApiError.js";
 
 const errorHandler = (err, req, res, next) => {
+  console.log("[ERROR HANDLER] Error caught:", err);
   let error = err;
 
   if (!(error instanceof ApiError)) {
