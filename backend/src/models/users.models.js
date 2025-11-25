@@ -28,8 +28,7 @@ const userSchema = new Schema(
       maxlength: [50, "Full name cannot exceed 50 characters"],
     },
     avatar: {
-      type: String,
-      required: true,
+      type: String, // Cloudinary URL
     },
     coverImage: {
       type: String,

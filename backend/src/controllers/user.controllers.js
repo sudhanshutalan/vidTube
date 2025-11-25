@@ -46,36 +46,26 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
   const coverLocalPath = req.files?.coverImage?.[0]?.path;
 
-  if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar file is missing");
-  }
-
-  // const avatar = await uploadOnCloudinary(avatarLocalPath);
-
-  // let coverImage = "";
-  // if (coverLocalPath) {
-  //   const response = await uploadOnCloudinary(coverLocalPath);
-  //   if (response) {
-  //     coverImage = response.url;
-  //   }
-  // }
-
   let avatar;
-  try {
-    avatar = await uploadOnCloudinary(avatarLocalPath);
-    console.log("avatar uploaded successfully", avatar.url);
-  } catch (error) {
-    console.log("Error uploading avatar", error);
-    throw new ApiError(500, "Failed to upload avatar");
+  if (avatarLocalPath) {
+    try {
+      avatar = await uploadOnCloudinary(avatarLocalPath);
+      console.log("avatar uploaded successfully", avatar.url);
+    } catch (error) {
+      console.log("Error uploading avatar", error);
+      throw new ApiError(500, "Failed to upload avatar");
+    }
   }
 
   let coverImage;
-  try {
-    coverImage = await uploadOnCloudinary(coverLocalPath);
-    console.log(" cover image uploaded successfully", coverImage.url);
-  } catch (error) {
-    console.log("Error uploading cover image", error);
-    throw new ApiError(500, "Failed to upload cover image");
+  if (coverLocalPath) {
+    try {
+      coverImage = await uploadOnCloudinary(coverLocalPath);
+      console.log(" cover image uploaded successfully", coverImage.url);
+    } catch (error) {
+      console.log("Error uploading cover image", error);
+      throw new ApiError(500, "Failed to upload cover image");
+    }
   }
 
   try {
@@ -349,7 +339,6 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to upload cover image");
   }
 });
-
 
 export {
   registerUser,
