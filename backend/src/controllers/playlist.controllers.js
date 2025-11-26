@@ -34,7 +34,9 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid user ID");
   }
 
-  const userPlaylist = await Playlist.find({ owner: userId });
+  const userPlaylist = await Playlist.find({ owner: userId }).select(
+    " -createdAt -updatedAt",
+  );
 
   if (!userPlaylist) {
     throw new ApiError(400, "user playlists not found");
@@ -58,7 +60,9 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     throw new ApiError(400, "invalid playlist id");
   }
 
-  const playlist = await Playlist.findById(playlistId);
+  const playlist = await Playlist.findById(playlistId).select(
+    " -createdAt -updatedAt ",
+  );
 
   if (!playlist) {
     throw new ApiError(400, "playlist not found");
@@ -148,7 +152,9 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     throw new ApiError(400, "invalid playlist id");
   }
 
-  const deletePlaylist = await Playlist.findByIdAndDelete(playlistId);
+  const deletePlaylist = await Playlist.findByIdAndDelete(playlistId).select(
+    "-videos -createdAt -updatedAt -description",
+  );
 
   if (!deletePlaylist) {
     throw new ApiError(400, "no playlist found");
@@ -177,7 +183,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     throw new ApiError(400, "description and name is required");
   }
 
-  const playlist = Playlist.findByIdAndUpdate(
+  const playlist = await Playlist.findByIdAndUpdate(
     playlistId,
     {
       $set: {
@@ -186,7 +192,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
       },
     },
     { new: true },
-  );
+  ).select("-videos -createdAt -updatedAt");
 
   if (!playlist) {
     throw new ApiError(400, "playlist not found");
