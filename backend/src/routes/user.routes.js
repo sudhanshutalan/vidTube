@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  getCurrentUser,
   loginUser,
   logoutUser,
   registerUser,
@@ -31,5 +32,7 @@ router.route("/login").post(loginUser);
 
 //logout user
 router.route("/logout").post(verifyJWT, logoutUser);
+
+router.route("/getCurrentUser").get(verifyJWT, getCurrentUser);
 
 export default router;
