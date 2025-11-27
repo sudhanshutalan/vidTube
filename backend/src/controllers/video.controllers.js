@@ -136,4 +136,90 @@ const updateVideo = asyncHandler(async (req, res) => {
     );
 });
 
-export { publishAVideo, getVideoById, updateVideo };
+const deleteVideo = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video Id");
+  }
+
+  try {
+    const deletedVideo = await Video.findByIdAndDelete(videoId);
+
+    if (!deletedVideo) {
+      throw new ApiError(400, "Video doesnot exist");
+    }
+    // deleting thumbnail
+    const thumbnailurl = deletedVideo.thumbnail;
+    console.log("thumbnail", thumbnailurl);
+    const thumbnailParts = thumbnailurl.split("/");
+    console.log("thumbnail", thumbnailParts);
+    const thumbnailPublicId =
+      thumbnailParts[thumbnailParts.length - 1].split(".")[0];
+
+    console.log("thumbnail", thumbnailPublicId);
+
+    await deleteFromCloudinary(thumbnailPublicId);
+
+    // deleting video
+    const videoFileurl = deletedVideo.videoFile;
+    console.log("videoFile", videoFileurl);
+    const videoFileParts = videoFileurl.split("/");
+    console.log("videoFile", videoFileParts);
+    const videoFilePublicId =
+      videoFileParts[videoFileParts.length - 1].split(".")[0];
+    console.log("videoFile", videoFilePublicId);
+
+    await deleteFromCloudinary(videoFilePublicId, "video");
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { data: deletedVideo },
+          "video deleted successfully",
+        ),
+      );
+  } catch (error) {
+    console.log("error in deleting video", error);
+    throw new ApiError(500, "Failed to delete Video", error);
+  }
+});
+
+const getAllUserVideos = asyncHandler(async (req, res) => {
+  // const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
+  //TODO: get all videos based on query, sort, pagination
+
+  const { userId } = req.params;
+
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(400, "Invalid user Id");
+  }
+
+  const userVideos = await Video.find({ owner: userId }).select(
+    " -createdAt -updatedAt",
+  );
+
+  if (!userVideos) {
+    throw new ApiError("User videos not found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { data: userVideos },
+        "user videos detched successfully",
+      ),
+    );
+});
+
+export {
+  publishAVideo,
+  getVideoById,
+  updateVideo,
+  deleteVideo,
+  getAllUserVideos,
+};
