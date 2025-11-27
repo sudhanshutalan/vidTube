@@ -4,7 +4,10 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Video } from "../models/video.models.js";
 import { User } from "../models/users.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from "../utils/cloudinary.js";
 
 const publishAVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
@@ -55,4 +58,82 @@ const publishAVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video published successfully"));
 });
 
-export { publishAVideo };
+const getVideoById = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  //TODO: get video by id
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video Id");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(400, "video not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { data: video }, "video fetched successfully"));
+});
+
+const updateVideo = asyncHandler(async (req, res) => {
+  //TODO: update video details like title, description, thumbnail
+  const { videoId } = req.params;
+  const { title, description } = req.body;
+
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid Id");
+  }
+
+  const video = await Video.findById(videoId);
+  const oldThumbnailurl = video.thumbnail;
+
+  console.log(oldThumbnailurl);
+
+  if (!title || !description) {
+    throw new ApiError(400, "title and description is required");
+  }
+
+  const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
+
+  if (!thumbnailLocalPath) {
+    throw new ApiError(400, "thumbnail file is missing");
+  }
+
+  const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+
+  if (!thumbnail) {
+    throw new ApiError(500, "Failed to upload thumbnail");
+  }
+
+  const updatedVideo = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      $set: {
+        title: title,
+        description: description,
+        thumbnail: thumbnail.url,
+      },
+    },
+    { new: true },
+  );
+
+  if (oldThumbnailurl) {
+    const parts = oldThumbnailurl.split("/");
+    const publicId = parts[parts.length - 1].split(".")[0];
+    console.log(publicId);
+    await deleteFromCloudinary(publicId);
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { data: updatedVideo },
+        "video updated successfully",
+      ),
+    );
+});
+
+export { publishAVideo, getVideoById, updateVideo };
