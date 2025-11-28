@@ -12,7 +12,7 @@ const commentSchema = new Schema(
       ref: "User",
     },
     content: {
-      type: Sting,
+      type: String,
     },
   },
   { timestamps: true },
