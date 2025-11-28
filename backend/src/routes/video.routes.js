@@ -47,6 +47,7 @@ router.route("/:videoId").patch(
 //route for deleting the video
 router.route("/:videoId").delete(deleteVideo);
 
+//route for getting user specific videos
 router.route("/user/:userId").get(getAllUserVideos);
 
 export default router;

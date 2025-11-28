@@ -1,4 +1,4 @@
-import { Mongoose, isValidObjectId } from "mongoose";
+import mongoose, { Mongoose, isValidObjectId } from "mongoose";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Video } from "../models/video.models.js";
@@ -188,9 +188,6 @@ const deleteVideo = asyncHandler(async (req, res) => {
 });
 
 const getAllUserVideos = asyncHandler(async (req, res) => {
-  // const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-  //TODO: get all videos based on query, sort, pagination
-
   const { userId } = req.params;
 
   if (!isValidObjectId(userId)) {
@@ -216,10 +213,93 @@ const getAllUserVideos = asyncHandler(async (req, res) => {
     );
 });
 
+const togglePublishStatus = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video Id");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(400, "Video not found");
+  }
+
+  video.isPublished = !video.isPublished;
+
+  const updatedtogle = await video.save();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { data: updatedtogle },
+        "Video status toggled succcessfully",
+      ),
+    );
+});
+
+const getAllVideos = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+  //TODO: get all videos based on query, sort, pagination
+
+  const aggregation = [];
+  if (userId && isValidObjectId(userId)) {
+    aggregation.push({
+      $match: { owner: new mongoose.Types.ObjectId(userId) },
+    });
+  }
+
+  if (query) {
+    aggregation.push({
+      $match: {
+        $or: [
+          { title: { $regex: new RegExp(query, "i") } },
+          { description: { $regex: new RegExp(query, "i") } },
+        ],
+      },
+    });
+  }
+
+  if (
+    sortBy &&
+    ["title", "duration", "views", "isPublished", "createdAt"].includes(sortBy)
+  ) {
+    const sortOrder = sortType.toLowerCase() === "desc" ? -1 : 1;
+
+    aggregation.push({
+      [sortBy]: sortOrder,
+    });
+  }
+
+  const options = {
+    page: +page,
+    limit: +limit,
+  };
+
+  const pipeline = Video.aggregate(aggregation);
+
+  const videoPaginated = await Video.aggregatePaginate(pipeline, options);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        videoPaginated,
+        "paginated query executed successfully",
+      ),
+    );
+});
+
 export {
   publishAVideo,
   getVideoById,
   updateVideo,
   deleteVideo,
   getAllUserVideos,
+  togglePublishStatus,
+  getAllVideos,
 };
