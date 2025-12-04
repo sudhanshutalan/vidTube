@@ -80,7 +80,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
 });
 
 const getChannelVideos = asyncHandler(async (req, res) => {
-  req.query.userId = req.user.id;
+  req.query.userId = req.user?._id;
   getAllVideos(req, res);
 });
 

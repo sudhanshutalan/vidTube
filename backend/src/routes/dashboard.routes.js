@@ -3,7 +3,7 @@ import {
   getChannelStats,
   getChannelVideos,
 } from "../controllers/dashboard.controllers.js";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verifyJWT } from "../middlewares/auth.middlewares.js";
 
 const router = Router();
 
