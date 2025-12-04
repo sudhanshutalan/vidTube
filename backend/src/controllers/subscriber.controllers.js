@@ -56,4 +56,87 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     );
 });
 
-export { toggleSubscription };
+const getSubscribedChannels = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 10,
+    sortBy = "createdAt",
+    sortType = "desc",
+  } = req.query;
+
+  const options = {
+    page: +page,
+    limit: +limit,
+  };
+
+  const sortOrder = sortType.toLowerCase() === "desc" ? -1 : 1;
+
+  const aggregation = [
+    {
+      $match: {
+        subscriber: new mongoose.Types.ObjectId(req.user?._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "channel",
+        foreignField: "_id",
+        as: "channelDetails",
+      },
+    },
+    {
+      $unwind: "$channelDetails",
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "channel",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $addFields: {
+        subscriberCount: { $size: "$subscribers" },
+      },
+    },
+    {
+      $project: {
+        _id: 0, // Don't return subscription _id
+        channelId: "$channelDetails._id", // Channel's ID
+        username: "$channelDetails.username", // Channel's username
+        fullName: "$channelDetails.fullName", // Channel's full name
+        avatar: "$channelDetails.avatar", // Channel's avatar
+        subscriberCount: 1, // Include subscriber count
+        subscribedAt: "$createdAt", // When user subscribed
+      },
+    },
+    {
+      $sort: { [sortBy]: sortOrder },
+    },
+  ];
+
+  const pipeline = Subscription.aggregate(aggregation);
+
+  const paginatedChannels = await Subscription.aggregatePaginate(
+    pipeline,
+    options,
+  );
+
+  if (!paginatedChannels) {
+    throw new ApiError(500, "Failed to fetch subscribed channels");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        paginatedChannels,
+        "Subscribed channels fetched successfully",
+      ),
+    );
+});
+
+export { toggleSubscription, getSubscribedChannels };
